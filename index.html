@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Attendance Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="max-w-4xl mx-auto p-6">
+        <header class="bg-indigo-600 text-white p-6 rounded-2xl shadow-lg mb-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">🤖 AI Attendance Tracker</h1>
+                <p class="text-indigo-200 text-sm mt-1">ဝန်ထမ်းများအတွက် နေ့စဉ်ရုံးတက်/ရုံးဆင်း မှတ်တမ်းစနစ်</p>
+            </div>
+            <div id="current-date" class="text-right font-medium text-indigo-100"></div>
+        </header>
+
+        <!-- Check-in Form Card -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">📝 တက်ရောက်မှု မှတ်တမ်းတင်ရန်</h2>
+            <form id="attendance-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ဝန်ထမ်းအမည်</label>
+                    <input type="text" id="emp-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="ဥပမာ - မောင်မောင်">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">အခြေအနေ (Status)</label>
+                    <select id="emp-status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="Present (ပုံမှန်)">Present (ပုံမှန် ရုံးတက်)</option>
+                        <option value="Late (နောက်ကျ)">Late (နောက်ကျ)</option>
+                        <option value="Leave (ခွင့်)">Leave (ခွင့်)</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 shadow-md">
+                        Check-in ပြုလုပ်မည်
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Attendance Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-800">📊 ယနေ့ တက်ရောက်သူများ စာရင်း</h2>
+                <button onclick="clearData()" class="text-sm text-red-600 hover:text-red-800 font-medium">စာရင်းအားလုံး ရှင်းလင်းရန်</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 text-sm">
+                            <th class="p-4">စဉ်</th>
+                            <th class="p-4">ဝန်ထမ်းအမည်</th>
+                            <th class="p-4">ရက်စွဲ & အချိန်</th>
+                            <th class="p-4">အခြေအနေ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-table-body" class="divide-y divide-gray-100 text-gray-700 text-sm">
+                        <!-- JavaScript ဖြင့် ဖြည့်သွင်းမည် -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Display Current Date
+        const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('my-MM', options);
+
+        // Load data from LocalStorage
+        let records = JSON.parse(localStorage.getItem('attendance_records')) || [];
+
+        const form = document.getElementById('attendance-form');
+        const tableBody = document.getElementById('attendance-table-body');
+
+        function renderTable() {
+            tableBody.innerHTML = '';
+            if (records.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400">ယနေ့အတွက် မှတ်တမ်းတင်ထားခြင်း မရှိသေးပါ။</td></tr>`;
+                return;
+            }
+            records.forEach((rec, index) => {
+                let badgeColor = 'bg-green-100 text-green-700';
+                if(rec.status.includes('Late')) badgeColor = 'bg-yellow-100 text-yellow-700';
+                if(rec.status.includes('Leave')) badgeColor = 'bg-red-100 text-red-700';
+
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-4">${index + 1}</td>
+                        <td class="p-4 font-medium">${rec.name}</td>
+                        <td class="p-4 text-gray-500">${rec.time}</td>
+                        <td class="p-4"><span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeColor}">${rec.status}</span></td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('emp-name').value;
+            const status = document.getElementById('emp-status').value;
+            const time = new Date().toLocaleString('my-MM', { hour: 'numeric', minute: 'numeric', hour12: true, month: 'short', day: 'numeric' });
+
+            records.push({ name, status, time });
+            localStorage.setItem('attendance_records', JSON.stringify(records));
+            
+            form.reset();
+            renderTable();
+        });
+
+        function clearData() {
+            if(confirm('စာရင်းအားလုံးကို ဖျက်ရန် သေချာပါသလား?')) {
+                records = [];
+                localStorage.removeItem('attendance_records');
+                renderTable();
+            }
+        }
+
+        renderTable();
+    </script>
+</body>
+</html>
